@@ -19,9 +19,9 @@ Accounts that already have `DONT_REQ_PREAUTH` set can be requested without chang
 
 Clone the repository, create a virtual environment, and install dependencies inside it:
 
-```bash
-git clone https://github.com/gzzcoo/targetedAsreproast.git
-cd targetedAsreproast
+```bas
+cd /opt
+git clone https://github.com/gzzcoo/targetedAsreproast.git; cd targetedAsreproast
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip
