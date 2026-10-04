@@ -364,16 +364,16 @@ def obtain_asrep_hash(sAMAccountName, target_domain, kdc_host):
         if etype in (17, 18):
             if args.output_format == 'john':
                 return '$krb5asrep$%d$%s%s$%s$%s' % (
-                    etype, target_domain, sAMAccountName,
+                    etype, domain, sAMAccountName,
                     hexlify(cipher[:-12]).decode(), hexlify(cipher[-12:]).decode())
             return '$krb5asrep$%d$%s$%s$%s$%s' % (
-                etype, sAMAccountName, target_domain,
+                etype, sAMAccountName, domain,
                 hexlify(cipher[-12:]).decode(), hexlify(cipher[:-12]).decode())
         if args.output_format == 'john':
             return '$krb5asrep$%s@%s:%s$%s' % (
-                sAMAccountName, target_domain, hexlify(cipher[:16]).decode(), hexlify(cipher[16:]).decode())
+                sAMAccountName, domain, hexlify(cipher[:16]).decode(), hexlify(cipher[16:]).decode())
         return '$krb5asrep$%d$%s@%s:%s$%s' % (
-            etype, sAMAccountName, target_domain,
+            etype, sAMAccountName, domain,
             hexlify(cipher[:16]).decode(), hexlify(cipher[16:]).decode())
     except Exception as e:
         if args.verbosity >= 1:
@@ -399,8 +399,6 @@ def set_uac_bit(ldap_session, dn, enabled):
 
 def handle_result(filename, result, user):
     if result is not None:
-        if args.output_format == 'john':
-            result = user + ':' + result
         if filename is not None and filename != '':
             if len(os.path.dirname(filename)) != 0:
                 if not os.path.exists(os.path.dirname(filename)):
@@ -453,7 +451,7 @@ def parse_args():
     parser.add_argument('-U', '--users-file', help='File with user per line to test')
     parser.add_argument('--request-user', action='store', metavar='username', help='Requests an AS-REP for the specified username')
     parser.add_argument('-o', '--output-file', action='store', help='Output file for AS-REP hashes')
-    parser.add_argument('-f', '--output-format', action='store', choices=['hashcat', 'john'], default='hashcat', help='Output format (default is "hashcat", "john" prepends usernames)')
+    parser.add_argument('-f', '--output-format', action='store', choices=['hashcat', 'john'], default='hashcat', help='Output format (default is "hashcat"; "john" uses native John syntax)')
     parser.add_argument('--use-ldaps', action='store_true', help='Use LDAPS instead of LDAP')
     parser.add_argument('--only-abuse', action='store_true', help='Only target accounts without DONT_REQ_PREAUTH already set')
     parser.add_argument('--no-abuse', action='store_true', help='Do not modify UAC; request AS-REPs only for accounts already configured without pre-authentication')
@@ -538,7 +536,6 @@ def main_asreproast():
                 logger.info('Setting DONT_REQ_PREAUTH temporarily for (%s)' % username)
                 handle_result(args.output_file, obtain_asrep_hash(username, domain, args.dc_ip), username)
             except Exception as target_error:
-                # Match targetedAsreproast: insufficient rights are expected per-object and debug-only.
                 ldap_code = (ldap_session.result or {}).get('result')
                 if ldap_code == 50:
                     logger.debug('Could not modify (%s), the server reports insufficient rights' % username)
