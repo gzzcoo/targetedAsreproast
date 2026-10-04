@@ -15,8 +15,6 @@ For each selected, enabled user account, the script:
 
 Accounts that already have `DONT_REQ_PREAUTH` set can be requested without changing their UAC. Insufficient access on one account is skipped quietly at normal verbosity, matching `targetedKerberoast`'s behavior. Use `-vv` to see debug messages.
 
-For a trusted or cross-forest target, `-d` identifies the authentication account's domain, while `-D` identifies the domain containing the target accounts. Set `--dc-ip` (and `--dc-host` when needed for Kerberos LDAP) to a domain controller in the target domain. The supplied identity must be able to bind to that LDAP server and have effective write access to `userAccountControl` on the target accounts; network reachability and trust direction/policy also apply.
-
 ## Installation
 
 Clone the repository, create a virtual environment, and install dependencies inside it:
