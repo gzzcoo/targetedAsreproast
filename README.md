@@ -122,6 +122,10 @@ The command line keeps the options from `targetedKerberoast.py`:
 
 Run `targetedAsreproast.py --help` for the full usage text.
 
+Below is an example what the tool can do.
+
+![](.assets/targetedAsreproast.png)
+
 ## Notes
 
 - `DONT_REQ_PREAUTH` is the `0x400000` bit in `userAccountControl`.
