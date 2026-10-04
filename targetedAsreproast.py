@@ -1,4 +1,4 @@
-#!/opt/tools/targetedAsreproast/venv/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Author: gzzcoo
 # Credits: https://github.com/ShutdownRepo/targetedKerberoast/tree/main
