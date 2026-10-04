@@ -551,6 +551,13 @@ def main_asreproast():
                     except Exception as cleanup_error:
                         logger.error('CRITICAL: failed to restore UAC for %s: %s' % (username, cleanup_error))
         ldap_session.unbind()
+    except KeyboardInterrupt:
+        logger.error('Interrupted, exiting.')
+        if ldap_session is not None and ldap_session.bound:
+            try:
+                ldap_session.unbind()
+            except Exception:
+                pass
     except Exception as e:
         logger.error(str(e))
         if args.verbosity >= 1:
