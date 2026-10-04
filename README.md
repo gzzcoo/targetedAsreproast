@@ -31,7 +31,7 @@ python -m pip install -r requirements.txt
 Point the script's shebang at the Python interpreter in this virtual environment and make it executable:
 
 ```bash
-sed -i "1s|^#!.*|#!$(pwd)/venv/bin/python|" targetedAsreproast.py
+sed -i '1c\#!'"$(pwd)"'/venv/bin/python3' targetedAsreproast.py
 chmod +x targetedAsreproast.py
 ```
 
