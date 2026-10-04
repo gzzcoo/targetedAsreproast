@@ -135,4 +135,4 @@ Below is an example what the tool can do.
 
 ## Credits and license
 
-Based on [targetedKerberoast by ShutdownRepo](https://github.com/ShutdownRepo/targetedKerberoast), with the request and temporary LDAP modification adapted for AS-REPRoasting. The upstream project is licensed under GPL-3.0; see its [license](https://github.com/ShutdownRepo/targetedKerberoast/blob/main/LICENSE).
+Based on [targetedKerberoast by ShutdownRepo](https://github.com/ShutdownRepo/targetedKerberoast), with the request and temporary LDAP modification adapted for AS-REPRoasting.
