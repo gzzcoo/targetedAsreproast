@@ -15,6 +15,8 @@ For each selected, enabled user account, the script:
 
 Accounts that already have `DONT_REQ_PREAUTH` set can be requested without changing their UAC. Insufficient access on one account is skipped quietly at normal verbosity, matching `targetedKerberoast`'s behavior. Use `-vv` to see debug messages.
 
+For a trusted or cross-forest target, `-d` identifies the authentication account's domain, while `-D` identifies the domain containing the target accounts. Set `--dc-ip` (and `--dc-host` when needed for Kerberos LDAP) to a domain controller in the target domain. The supplied identity must be able to bind to that LDAP server and have effective write access to `userAccountControl` on the target accounts; network reachability and trust direction/policy also apply.
+
 ## Installation
 
 Clone the repository, create a virtual environment, and install dependencies inside it:
@@ -102,7 +104,7 @@ The command line keeps the options from `targetedKerberoast.py`:
 | --- | --- |
 | `-v`, `-vv` | Increase verbosity; `-vv` includes debug messages. |
 | `-q` | Suppress informational output. |
-| `-D`, `--target-domain` | Domain to request AS-REPs from when different from the authentication domain. |
+| `-D`, `--target-domain` | Domain to enumerate and request AS-REPs from; `--dc-ip` must point to a DC in this domain. |
 | `-U`, `--users-file` | File containing one username per line. |
 | `--request-user USER` | Process only the specified account. |
 | `-o`, `--output-file` | Write hashes to a file. |
@@ -135,4 +137,4 @@ Below is an example what the tool can do.
 
 ## Credits and license
 
-Based on [targetedKerberoast by ShutdownRepo](https://github.com/ShutdownRepo/targetedKerberoast), with the request and temporary LDAP modification adapted for AS-REPRoasting.
+Based on [targetedKerberoast by ShutdownRepo](https://github.com/ShutdownRepo/targetedKerberoast), with the request and temporary LDAP modification adapted for AS-REPRoasting. The upstream project is licensed under GPL-3.0; see its [license](https://github.com/ShutdownRepo/targetedKerberoast/blob/main/LICENSE).
