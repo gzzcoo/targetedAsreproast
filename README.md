@@ -2,7 +2,7 @@
 
 `targetedAsreproast.py` adapts [ShutdownRepo's targetedKerberoast](https://github.com/ShutdownRepo/targetedKerberoast) to perform targeted AS-REPRoasting. Instead of temporarily assigning a Service Principal Name, it temporarily sets the `DONT_REQ_PREAUTH` bit in `userAccountControl`, requests an AS-REP for the account, and removes the bit afterward.
 
-This is useful when an ACL grants write access to `userAccountControl` on one or more user accounts. Depending on the effective permissions, this can include `GenericWrite`, `GenericAll`, or `WriteProperty` specifically over `userAccountControl`. The tool tries accounts individually, so an account that denies the modification does not stop processing the rest.
+This is useful when an ACL grants only a `WritePoperty` access to `userAccountControl` on one or more user accounts. Depending on the effective permissions, this can include `GenericWrite`, `GenericAll`, or `WriteProperty` specifically over `userAccountControl`. The tool tries accounts individually, so an account that denies the modification does not stop processing the rest.
 
 ## How it works
 
